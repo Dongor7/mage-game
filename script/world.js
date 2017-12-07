@@ -30,7 +30,7 @@ let changeAnimationTo = function(abject, animation){
     abject.h = animation.h;
 };
 
-console.log("Version 0.1.5");
+console.log("Version 0.1.6");
 
 game.newLoopFromConstructor('myGame', function () {
 
@@ -44,8 +44,8 @@ game.newLoopFromConstructor('myGame', function () {
         '000000000000000000000000000000',
         '0                            0',
         '0                            0',
-        '0 P     S      S         S   0',
-        '0         0         0        0',
+        '0 P     S      S    0    S   0',
+        '0         0        000       0',
         '000000000000000000000000000000',
         '0                            0',
         '0                            0',
