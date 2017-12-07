@@ -41,16 +41,16 @@ game.newLoopFromConstructor('myGame', function () {
     let skeletons = [];
     let player = null;
     pjs.levels.forStringArray({w : BW, h : BH, source : [
-        '0000000000000000000000000000',
-        '0000000000000000000000000000',
-        '0000000000000000000000000000',
-        '0000000000000000000000000000',
-        '0                          0',
-        '0                          0',
-        '0 P    S     S         S   0',
-        '0        0        0        0',
-        '0000000000000000000000000000',
-        '0000000000000000000000000000'
+        '000000000000000000000000000000',
+        '000000000000000000000000000000',
+        '000000000000000000000000000000',
+        '000000000000000000000000000000',
+        '0                            0',
+        '0                            0',
+        '0 P     S      S         S   0',
+        '0         0         0        0',
+        '000000000000000000000000000000',
+        '000000000000000000000000000000'
     ]}, function (S, X, Y, W, H) {
         if (S === '0') {
             world.push(game.newRoundRectObject({
@@ -175,7 +175,7 @@ game.newLoopFromConstructor('myGame', function () {
 
             if(mouse.isInObject(skeleton) &&
                 (mouse.isPress('LEFT') || mouse.isDown('LEFT')) &&
-                player.getDistanceC((skeleton.getPositionC())) < 300 &&
+                player.getDistanceC((skeleton.getPositionC())) < 250 &&
                 player.currentHealth > 0) {
 
                 if(!player.isShot){
@@ -211,7 +211,7 @@ game.newLoopFromConstructor('myGame', function () {
             let speedSkeleton = point(0, 3);
             let startX = skeleton.x;
 
-            if (skeleton.isAlive && skeleton.getDistanceC(player.getPositionC()) < 300){
+            if (skeleton.isAlive && skeleton.getDistanceC(player.getPositionC()) < 250){
 
                 if (player.underAttack){
 
