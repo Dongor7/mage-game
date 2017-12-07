@@ -30,6 +30,8 @@ let changeAnimationTo = function(abject, animation){
     abject.h = animation.h;
 };
 
+console.log("Version 0.1.5");
+
 game.newLoopFromConstructor('myGame', function () {
 
     let speedPlayer = point(0, 3);
@@ -173,7 +175,7 @@ game.newLoopFromConstructor('myGame', function () {
 
             if(mouse.isInObject(skeleton) &&
                 (mouse.isPress('LEFT') || mouse.isDown('LEFT')) &&
-                player.getDistanceC((skeleton.getPositionC())) < 200 &&
+                player.getDistanceC((skeleton.getPositionC())) < 300 &&
                 player.currentHealth > 0) {
 
                 if(!player.isShot){
@@ -209,15 +211,13 @@ game.newLoopFromConstructor('myGame', function () {
             let speedSkeleton = point(0, 3);
             let startX = skeleton.x;
 
-            if (skeleton.isAlive && skeleton.getDistanceC(player.getPositionC()) < 200){
+            if (skeleton.isAlive && skeleton.getDistanceC(player.getPositionC()) < 300){
 
                 if (player.underAttack){
 
                 } else if (skeleton.isIntersect(player)){
 
                     skeleton.isAttack = true;
-                    /*skeleton.w = 141;
-                    skeleton.h = 112;*/
 
                     if(player.x > skeleton.x){
                         changeAnimationTo(skeleton, skeletonStraightAttackAnimation);
@@ -240,8 +240,6 @@ game.newLoopFromConstructor('myGame', function () {
 
                 } else if (!skeleton.isAttack){
                     skeleton.moveToC(player.getPositionC(), 1);
-                    /*skeleton.h = 87;
-                    skeleton.w = 73;*/
                     skeleton.agro = true;
 
                     if (startX < skeleton.x) {
@@ -253,8 +251,6 @@ game.newLoopFromConstructor('myGame', function () {
 
             } else if (!skeleton.isAttack && skeleton.isAlive && skeleton.agro && skeleton.getDistanceC(player.getPositionC()) > 200) {
                 skeleton.moveTo(skeleton.creationPoint, 1);
-                /*skeleton.w = 73;
-                skeleton.h = 87;*/
 
                 if (skeleton.creationPoint.x < skeleton.x) {
                     changeAnimationTo(skeleton, skeletonBackWalkAnimation);
@@ -264,8 +260,6 @@ game.newLoopFromConstructor('myGame', function () {
                 if (Math.round(skeleton.x) === skeleton.creationPoint.x) {
                     skeleton.agro = false;
                     changeAnimationTo(skeleton, skeletonStayAnimation);
-                    /*skeleton.w = 58;
-                    skeleton.h = 109;*/
                     skeleton.currentHealth = skeleton.health;
                 }
             }
