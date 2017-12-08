@@ -1,5 +1,5 @@
 let pjs = new PointJS(640, 480, {
-    backgroundColor: '#4b4843' // optional
+    background: 'url(resources/background.png)' // optional
 });
 pjs.system.initFullPage(); // for Full Page mode
 // pjs.system.initFullScreen(); // for Full Screen mode (only Desctop)
@@ -18,7 +18,7 @@ let mouse = pjs.mouseControl.initMouseControl();
 let width  = game.getWH().w; // width of scene viewport
 let height = game.getWH().h; // currentHealth of scene viewport
 
-let BW = 50, BH = 50;
+let BW = 57, BH = 55;
 
 pjs.system.initFPSCheck();
 
@@ -44,27 +44,28 @@ game.newLoopFromConstructor('myGame', function () {
         '000000000000000000000000000000',
         '0                            0',
         '0                            0',
-        '0 P     S      S    0    S   0',
-        '0         0        000       0',
-        '000000000000000000000000000000',
-        '0                            0',
-        '0                            0',
-        '0                            0',
-        '0                            0',
+        '0000000000     00000000      0',
+        '0P     S    0         00       0',
+        '0          000         00           0',
+        '000000000000000000000   00000000000',
+        '0                    0          S   0',
+        '0                     0             0',
+        '0                      000   000000        0',
+        '0     S                     00',
+        '0                          000',
         '000000000000000000000000000000'
     ]}, function (S, X, Y, W, H) {
         if (S === '0') {
-            world.push(game.newRoundRectObject({
+            world.push(game.newImageObject({
                 x : X, y : Y,
                 w : W, h : H,
-                fillColor : '#bcbcbc',
-                radius : 10
+                file : 'resources/wall.png'
             }));
         } else if (S === 'P') {
             player = game.newAnimationObject({
                 animation : null,
                 x : X, y : Y,
-                w : 41, h : 101,
+                w : 41, h : 102,
                 delay : 8,
                 scale : 1,
                 userData : {
@@ -82,8 +83,8 @@ game.newLoopFromConstructor('myGame', function () {
                 delay : 10,
                 scale : 1,
                 userData : {
-                    health : 10,
-                    currentHealth : 10,
+                    health : 5,
+                    currentHealth : 5,
                     creationPoint : point(X, Y),
                     agro : false,
                     isAlive : true,
@@ -97,7 +98,7 @@ game.newLoopFromConstructor('myGame', function () {
 
     let playerStayAnimation = pjs.tiles.newAnimation('resources/mageStraightStay.png', 50, 101, 8);
     let playerBackStayAnimation = pjs.tiles.newAnimation('resources/mageBackStay.png', 41, 101, 8);
-    let playerStraightWalkAnimation = pjs.tiles.newAnimation('resources/mage_straight_walk.png', 72, 102, 8);
+    let playerStraightWalkAnimation = pjs.tiles.newAnimation('resources/walk2.png', 62, 102, 8);
     let playerBackWalkAnimation = pjs.tiles.newAnimation('resources/mage_back_walk.png', 72, 102, 8);
     let playerInjuryAnimation = pjs.tiles.newAnimation('resources/mageInjury.png', 96, 102, 6);
     let playerDeathAnimation = pjs.tiles.newAnimation('resources/mageDeath.png', 83, 116, 8);
@@ -124,7 +125,10 @@ game.newLoopFromConstructor('myGame', function () {
 
         }else if(key.isDown('A')){
             let sp = -3;
-            changeAnimationTo(player, playerBackWalkAnimation);
+            // changeAnimationTo(player, playerBackWalkAnimation);
+            player.setAnimation(playerBackWalkAnimation);
+            player.w = 62;
+            player.h = 102;
             player.setDelay(3);
 
             if(key.isDown('SHIFT')){
@@ -148,7 +152,7 @@ game.newLoopFromConstructor('myGame', function () {
 
             speedPlayer.x = sp;
 
-            lastKey = 'B'
+            lastKey = 'D'
         } else if(!player.isShot){
             speedPlayer.x = 0;
             player.setDelay(8);
@@ -157,11 +161,16 @@ game.newLoopFromConstructor('myGame', function () {
             if (lastKey === 'A'){
                 changeAnimationTo(player, playerBackStayAnimation);
             }
+
+            if (lastKey === 'D'){
+                player.x += playerStraightWalkAnimation.w - playerStayAnimation.w;
+                lastKey = null;
+            }
         }
 
         if(key.isPress('W') && !countJump){
             countJump++;
-            speedPlayer.y = -7;
+            speedPlayer.y = -8;
         }
 
         if(speedPlayer.y < 5) {
@@ -268,7 +277,15 @@ game.newLoopFromConstructor('myGame', function () {
                 speedSkeleton.y += 0.4;
             }
 
-            pjs.vector.moveCollision(skeleton, arr, speedSkeleton);
+            pjs.vector.moveCollision(skeleton, arr, speedSkeleton, function(sk, w, isX, isY) {
+
+                if(w.x > sk.x){
+                    sk.x -= speedSkeleton.x;
+                } else if(w.x < sk.x){
+                    sk.x += speedSkeleton.x;
+                }
+
+            });
         })
 
     };
@@ -293,13 +310,14 @@ game.newLoopFromConstructor('myGame', function () {
         mouse.setCursorImage("resources/cursorDefault.png");
         player.control(world, skeletons);
         player.draw();
+        // player.drawStaticBox();
 
         skeletons.control(world, player);
 
         OOP.forArr(world, function(brick) {
             OOP.forArr(fireBalls, function(fireball, idFireball){
                 if(fireball.isStaticIntersect(brick)){
-                    fireBalls.splice(idFireball, 1);;
+                    fireBalls.splice(idFireball, 1);
                 }
             });
             brick.draw();
@@ -330,9 +348,8 @@ game.newLoopFromConstructor('myGame', function () {
         });
 
         OOP.forArr(skeletons, function (skeleton) {
-            skeleton.draw();
 
-            if(skeleton.currentHealth > 0){
+            /*if(skeleton.currentHealth > 0){
                 brush.drawTextS({
                     text : skeleton.currentHealth,
                     color : 'white',
@@ -341,15 +358,17 @@ game.newLoopFromConstructor('myGame', function () {
                     y : skeleton.y - 10,
                     align : 'center'
                 });
-            }
+            }*/
 
             if(mouse.isInObject(skeleton)) {
                 mouse.setCursorImage("resources/cursorAttack.png");
             }
 
+            skeleton.draw();
+            // skeleton.drawStaticBox();
         });
 
-        pjs.system.setSmoothing(false);
+        //pjs.system.setSmoothing(false);
 
         brush.onContext(function (ctx) {
             let plPos = player.getPosition();
@@ -360,16 +379,29 @@ game.newLoopFromConstructor('myGame', function () {
             ctx.fillRect(0, 0, game.getWH().w, game.getWH().h);
         });
 
-        if(player.currentHealth > 0) {
+        if(player.currentHealth >= 0) {
+
+            brush.drawImageS({
+                file : 'resources/heart.png',
+                x : 10, y : 10,
+                w : 100,
+                scale : 0.8
+            });
+
             brush.drawTextS({
-                text: player.currentHealth,
-                color: 'white',
-                size: 15,
-                x: player.x + player.w / 2,
-                y: player.y - 15,
-                align: 'center'
+                text : player.currentHealth,
+                color : 'black',
+                size : 45,
+                x : 38, y : 22
             });
         }
+
+        /*brush.drawTextS({
+            text : pjs.system.getFPS(),
+            color : 'white',
+            size : 50,
+            x : game.getWH().w - 65
+        });*/
 
     };
 });
