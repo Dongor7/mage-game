@@ -30,9 +30,14 @@ let changeAnimationTo = function(abject, animation){
     abject.h = animation.h;
 };
 
-console.log("Version 0.1.6");
+console.log("Version 0.2.1");
 
 game.newLoopFromConstructor('myGame', function () {
+
+    let isWalkPlay = false;
+    let walkAudio = null;
+    let fireballAudio = null;
+    let zombieAttack = null;
 
     let speedPlayer = point(0, 3);
     let countJump = 0;
@@ -124,8 +129,13 @@ game.newLoopFromConstructor('myGame', function () {
             }, 1150);
 
         }else if(key.isDown('A')){
+
+            if (!isWalkPlay){
+                console.log("PLAY");
+                walkAudio.play();
+                isWalkPlay = true;
+            }
             let sp = -3;
-            // changeAnimationTo(player, playerBackWalkAnimation);
             player.setAnimation(playerBackWalkAnimation);
             player.w = 62;
             player.h = 102;
@@ -141,6 +151,12 @@ game.newLoopFromConstructor('myGame', function () {
             lastKey = 'A';
         }
         else if(key.isDown('D')){
+
+            if (!isWalkPlay){
+                walkAudio.play();
+                isWalkPlay = true;
+            }
+
             let sp = 3;
             changeAnimationTo(player, playerStraightWalkAnimation);
             player.setDelay(3);
@@ -154,6 +170,10 @@ game.newLoopFromConstructor('myGame', function () {
 
             lastKey = 'D'
         } else if(!player.isShot){
+
+            walkAudio.stop();
+            isWalkPlay = false;
+
             speedPlayer.x = 0;
             player.setDelay(8);
             changeAnimationTo(player, playerStayAnimation);
@@ -188,6 +208,8 @@ game.newLoopFromConstructor('myGame', function () {
                 player.getDistanceC((skeleton.getPositionC())) < 250 &&
                 player.currentHealth > 0) {
 
+                console.log("IN SHOOT LOOP");
+
                 if(!player.isShot){
                     player.isShot = true;
 
@@ -202,6 +224,7 @@ game.newLoopFromConstructor('myGame', function () {
 
                     setTimeout(function () {
                         addFireBall();
+                        fireballAudio.play();
                     }, 500);
 
                     setTimeout(function () {
@@ -222,6 +245,8 @@ game.newLoopFromConstructor('myGame', function () {
             let startX = skeleton.x;
 
             if (skeleton.isAlive && skeleton.getDistanceC(player.getPositionC()) < 250){
+
+                zombieAttack.play();
 
                 if (player.underAttack){
 
@@ -261,6 +286,8 @@ game.newLoopFromConstructor('myGame', function () {
 
             } else if (!skeleton.isAttack && skeleton.isAlive && skeleton.agro && skeleton.getDistanceC(player.getPositionC()) > 200) {
                 skeleton.moveTo(skeleton.creationPoint, 1);
+
+                zombieAttack.stop();
 
                 if (skeleton.creationPoint.x < skeleton.x) {
                     changeAnimationTo(skeleton, skeletonBackWalkAnimation);
@@ -329,6 +356,7 @@ game.newLoopFromConstructor('myGame', function () {
                     skeleton.currentHealth--;
                     fireBalls.splice(idFireball, 1);
                     if(skeleton.currentHealth === 0) {
+                        zombieAttack.stop();
                         changeAnimationTo(skeleton, skeletonDeathAnimation);
                         skeleton.x += 11;
                         skeleton.isAlive = false;
@@ -404,6 +432,18 @@ game.newLoopFromConstructor('myGame', function () {
         });*/
 
     };
+
+    this.entry = function () {
+        walkAudio = pjs.wAudio.newAudio('resources/audio/walk.mp3');
+        fireballAudio = pjs.wAudio.newAudio('resources/audio/fireball.mp3');
+        zombieAttack = pjs.wAudio.newAudio('resources/audio/zombieAttack.mp3', 0.8);
+
+        let fonAudio = pjs.wAudio.newAudio('resources/audio/fon.mp3', 0.6);
+        game.setLoopSound('myGame', [fonAudio]);
+    }
 });
+
+
+
 
 game.startLoop('myGame');
