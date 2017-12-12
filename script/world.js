@@ -30,7 +30,7 @@ let changeAnimationTo = function(abject, animation){
     abject.h = animation.h;
 };
 
-console.log("Version 0.2.1");
+console.log("Version 0.2.2");
 
 game.newLoopFromConstructor('myGame', function () {
 
@@ -40,11 +40,14 @@ game.newLoopFromConstructor('myGame', function () {
     let zombieAttack = null;
 
     let speedPlayer = point(0, 3);
+    let speedCamera = point(3, 0);
+    let previousPlayerX = null;
     let countJump = 0;
 
     let world = [];
     let skeletons = [];
     let player = null;
+
     pjs.levels.forStringArray({w : BW, h : BH, source : [
         '000000000000000000000000000000',
         '0                            0',
@@ -52,14 +55,14 @@ game.newLoopFromConstructor('myGame', function () {
         '0000000000     00000000      0',
         '0P     S    0         00       0',
         '0          000         00           0',
-        '000000000000000000000   00000000000',
+        '000000000000000000000   0000000000000',
         '0                    0          S   0',
         '0                     0             0',
-        '0                      000   000000        0',
+        '0                      000   00000000',
         '0     S                     00',
         '0                          000',
         '000000000000000000000000000000'
-    ]}, function (S, X, Y, W, H) {
+    ]}, function (S, X, Y, W, H, source) {
         if (S === '0') {
             world.push(game.newImageObject({
                 x : X, y : Y,
@@ -99,7 +102,10 @@ game.newLoopFromConstructor('myGame', function () {
 
             skeletons.push(skeleton);
         }
+
     });
+
+    let levelLength = '000000000000000000000   0000000000000'.length * BW;
 
     let playerStayAnimation = pjs.tiles.newAnimation('resources/mageStraightStay.png', 50, 101, 8);
     let playerBackStayAnimation = pjs.tiles.newAnimation('resources/mageBackStay.png', 41, 101, 8);
@@ -131,7 +137,6 @@ game.newLoopFromConstructor('myGame', function () {
         }else if(key.isDown('A')){
 
             if (!isWalkPlay){
-                console.log("PLAY");
                 walkAudio.play();
                 isWalkPlay = true;
             }
@@ -147,6 +152,17 @@ game.newLoopFromConstructor('myGame', function () {
             }
 
             speedPlayer.x = sp;
+            speedCamera = speedPlayer;
+
+            let currentX = player.getPositionC().x;
+
+            if(game.getWH().w / 2 > camera.getPosition().x &&
+                previousPlayerX > currentX &&
+                camera.getPosition().x > 0){
+
+                    previousPlayerX = currentX;
+                    camera.move(speedCamera);
+            }
 
             lastKey = 'A';
         }
@@ -167,6 +183,17 @@ game.newLoopFromConstructor('myGame', function () {
             }
 
             speedPlayer.x = sp;
+            speedCamera = speedPlayer;
+
+            let currentX = player.getPositionC().x;
+
+            if(game.getWH().w / 2 < currentX &&
+                previousPlayerX < currentX &&
+                camera.getPosition().x + game.getWH().w < levelLength){
+
+                    previousPlayerX = currentX;
+                    camera.move(speedCamera);
+            }
 
             lastKey = 'D'
         } else if(!player.isShot){
@@ -208,30 +235,28 @@ game.newLoopFromConstructor('myGame', function () {
                 player.getDistanceC((skeleton.getPositionC())) < 250 &&
                 player.currentHealth > 0) {
 
-                console.log("IN SHOOT LOOP");
+                    if(!player.isShot){
+                        player.isShot = true;
 
-                if(!player.isShot){
-                    player.isShot = true;
+                        player.w = 82;
+                        player.h = 108;
+                        player.setDelay(6);
 
-                    player.w = 82;
-                    player.h = 108;
-                    player.setDelay(6);
+                        if(player.x > skeleton.x)
+                            changeAnimationTo(player, playerBackAttackAnimation);
+                        else
+                            changeAnimationTo(player, playerStraightAttackAnimation);
 
-                    if(player.x > skeleton.x)
-                        changeAnimationTo(player, playerBackAttackAnimation);
-                    else
-                        changeAnimationTo(player, playerStraightAttackAnimation);
+                        setTimeout(function () {
+                            addFireBall();
+                            fireballAudio.play();
+                        }, 500);
 
-                    setTimeout(function () {
-                        addFireBall();
-                        fireballAudio.play();
-                    }, 500);
-
-                    setTimeout(function () {
-                        player.isShot = false;
-                        player.setDelay(8);
-                    }, 700)
-                }
+                        setTimeout(function () {
+                            player.isShot = false;
+                            player.setDelay(8);
+                        }, 700)
+                    }
 
             }
         });
@@ -333,11 +358,9 @@ game.newLoopFromConstructor('myGame', function () {
     };
 
     this.update = function () {
-
         mouse.setCursorImage("resources/cursorDefault.png");
         player.control(world, skeletons);
         player.draw();
-        // player.drawStaticBox();
 
         skeletons.control(world, player);
 
@@ -400,7 +423,11 @@ game.newLoopFromConstructor('myGame', function () {
 
         brush.onContext(function (ctx) {
             let plPos = player.getPosition();
-            let gradient = ctx.createRadialGradient(plPos.x + player.w - 15, plPos.y + 5 , 300, plPos.x + player.w - 5, plPos.y + 5, 0);
+            let gradient = ctx.createRadialGradient(plPos.x + player.w - 15 - camera.getPosition().x,
+                                                    plPos.y + 5,
+                                                    300,
+                                                    plPos.x + player.w - 5 - camera.getPosition().x,
+                                                    plPos.y + 5, 0);
             gradient.addColorStop(0, pjs.colors.rgba(0, 0, 0, 0.95));
             gradient.addColorStop(1, 'transparent');
             ctx.fillStyle = gradient;
