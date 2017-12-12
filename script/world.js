@@ -1,28 +1,28 @@
 let pjs = new PointJS(640, 480, {
-    background: 'url(resources/background.png)' // optional
+    background: 'url(resources/background.png)'
 });
-pjs.system.initFullPage(); // for Full Page mode
-// pjs.system.initFullScreen(); // for Full Screen mode (only Desctop)
+pjs.system.initFullPage();
 
-let log = pjs.system.log;     // log = console.log;
-let game   = pjs.game;           // Game Manager
-let point  = pjs.vector.point;   // Constructor for Point
-let camera = pjs.camera;         // Camera Manager
-let brush  = pjs.brush;          // Brush, used for simple drawing
-let OOP    = pjs.OOP;            // Objects manager
-let math   = pjs.math;           // More Math-methods
+let log    = pjs.system.log;
+let game   = pjs.game;
+let point  = pjs.vector.point;
+let camera = pjs.camera;
+let brush  = pjs.brush;
+let OOP    = pjs.OOP;
+let math   = pjs.math;
 
 let key   = pjs.keyControl.initKeyControl();
 let mouse = pjs.mouseControl.initMouseControl();
 
-let width  = game.getWH().w; // width of scene viewport
-let height = game.getWH().h; // currentHealth of scene viewport
+let width  = game.getWH().w;
+let height = game.getWH().h;
 
 let BW = 57, BH = 55;
 
 pjs.system.initFPSCheck();
 
 let lastKey;
+let closeMenu;
 
 let changeAnimationTo = function(abject, animation){
     abject.setAnimation(animation);
@@ -30,7 +30,7 @@ let changeAnimationTo = function(abject, animation){
     abject.h = animation.h;
 };
 
-console.log("Version 0.2.2");
+console.log("Version 0.2.3");
 
 game.newLoopFromConstructor('myGame', function () {
 
@@ -50,10 +50,10 @@ game.newLoopFromConstructor('myGame', function () {
 
     pjs.levels.forStringArray({w : BW, h : BH, source : [
         '000000000000000000000000000000',
-        '0                            0',
+        '0P                           0',
         '0                            0',
         '0000000000     00000000      0',
-        '0P     S    0         00       0',
+        '0     S     0         00      0',
         '0          000         00           0',
         '000000000000000000000   0000000000000',
         '0                    0          S   0',
@@ -111,7 +111,6 @@ game.newLoopFromConstructor('myGame', function () {
     let playerBackStayAnimation = pjs.tiles.newAnimation('resources/mageBackStay.png', 41, 101, 8);
     let playerStraightWalkAnimation = pjs.tiles.newAnimation('resources/walk2.png', 62, 102, 8);
     let playerBackWalkAnimation = pjs.tiles.newAnimation('resources/mage_back_walk.png', 72, 102, 8);
-    let playerInjuryAnimation = pjs.tiles.newAnimation('resources/mageInjury.png', 96, 102, 6);
     let playerDeathAnimation = pjs.tiles.newAnimation('resources/mageDeath.png', 83, 116, 8);
     let playerStraightAttackAnimation = pjs.tiles.newAnimation('resources/mageStraightAttack.png', 82, 108, 8);
     let playerBackAttackAnimation = pjs.tiles.newAnimation('resources/mageBackAttack.png', 82, 108, 5);
@@ -156,7 +155,7 @@ game.newLoopFromConstructor('myGame', function () {
 
             let currentX = player.getPositionC().x;
 
-            if(game.getWH().w / 2 > camera.getPosition().x &&
+            if(width / 2 > camera.getPosition().x &&
                 previousPlayerX > currentX &&
                 camera.getPosition().x > 0){
 
@@ -187,9 +186,9 @@ game.newLoopFromConstructor('myGame', function () {
 
             let currentX = player.getPositionC().x;
 
-            if(game.getWH().w / 2 < currentX &&
+            if(width / 2 < currentX &&
                 previousPlayerX < currentX &&
-                camera.getPosition().x + game.getWH().w < levelLength){
+                camera.getPosition().x + width < levelLength){
 
                     previousPlayerX = currentX;
                     camera.move(speedCamera);
@@ -299,7 +298,7 @@ game.newLoopFromConstructor('myGame', function () {
                     },1000)
 
                 } else if (!skeleton.isAttack){
-                    skeleton.moveToC(player.getPositionC(), 1);
+                    skeleton.moveToC(player.getPositionC(), 2);
                     skeleton.agro = true;
 
                     if (startX < skeleton.x) {
@@ -309,8 +308,8 @@ game.newLoopFromConstructor('myGame', function () {
                     }
                 }
 
-            } else if (!skeleton.isAttack && skeleton.isAlive && skeleton.agro && skeleton.getDistanceC(player.getPositionC()) > 200) {
-                skeleton.moveTo(skeleton.creationPoint, 1);
+            } else if (!skeleton.isAttack && skeleton.isAlive && skeleton.agro && skeleton.getDistanceC(player.getPositionC()) > 250) {
+                skeleton.moveTo(skeleton.creationPoint, 4);
 
                 zombieAttack.stop();
 
@@ -325,6 +324,7 @@ game.newLoopFromConstructor('myGame', function () {
                     skeleton.currentHealth = skeleton.health;
                 }
             }
+
             if(speedSkeleton.y < 5) {
                 speedSkeleton.y += 0.4;
             }
@@ -358,6 +358,11 @@ game.newLoopFromConstructor('myGame', function () {
     };
 
     this.update = function () {
+        brush.drawImage({
+            x : 56, y : 56,
+            w : 66, h : 110,
+            file : 'resources/door.png'
+        });
         mouse.setCursorImage("resources/cursorDefault.png");
         player.control(world, skeletons);
         player.draw();
@@ -419,8 +424,6 @@ game.newLoopFromConstructor('myGame', function () {
             // skeleton.drawStaticBox();
         });
 
-        //pjs.system.setSmoothing(false);
-
         brush.onContext(function (ctx) {
             let plPos = player.getPosition();
             let gradient = ctx.createRadialGradient(plPos.x + player.w - 15 - camera.getPosition().x,
@@ -431,7 +434,7 @@ game.newLoopFromConstructor('myGame', function () {
             gradient.addColorStop(0, pjs.colors.rgba(0, 0, 0, 0.95));
             gradient.addColorStop(1, 'transparent');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, game.getWH().w, game.getWH().h);
+            ctx.fillRect(0, 0, width, height);
         });
 
         if(player.currentHealth >= 0) {
@@ -458,6 +461,11 @@ game.newLoopFromConstructor('myGame', function () {
             x : game.getWH().w - 65
         });*/
 
+        if(key.isPress('SPACE')){
+            game.setLoop('pause');
+            zombieAttack.stop();
+        }
+
     };
 
     this.entry = function () {
@@ -470,7 +478,62 @@ game.newLoopFromConstructor('myGame', function () {
     }
 });
 
+game.newLoopFromConstructor('pause', function () {
 
+    this.update = function () {
 
+        game.fill('black');
 
-game.startLoop('myGame');
+        brush.drawText({
+            text : 'PAUSE',
+            size : 70,
+            color : 'white'
+        });
+
+        if(key.isPress('SPACE')){
+            game.setLoop('myGame');
+        }
+    };
+
+    this.entry = function () {
+    }
+
+});
+
+game.newLoopFromConstructor('menu', function () {
+
+    this.update = function () {
+
+    };
+
+    this.entry = function () {
+        let base;
+        let createMenu;
+
+        closeMenu = function() {
+            pjs.system.removeDOM(base);
+        };
+
+        createMenu = function() {
+            base = pjs.system.newDOM('div', true);
+            base.className = 'base';
+            base.innerHTML = `
+	
+	    <h1>Game Name</h1>
+
+        <div class="menu">
+    
+            <span onclick="closeMenu(); game.startLoop('myGame')">New game</span>
+            <span>Options</span>
+            <span>About</span>
+        
+        </div>
+    
+	`;
+        };
+        createMenu();
+    }
+
+});
+
+game.startLoop('menu');
