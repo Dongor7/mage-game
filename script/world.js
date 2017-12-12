@@ -536,4 +536,5 @@ game.newLoopFromConstructor('menu', function () {
 
 });
 
-game.startLoop('menu');
+if(pjs.resources.isLoaded)
+    game.startLoop('menu');
