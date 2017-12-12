@@ -1,5 +1,5 @@
 let pjs = new PointJS(640, 480, {
-    background: 'url(resources/background.png)'
+    /*background: 'url(resources/background.png)'*/
 });
 pjs.system.initFullPage();
 
@@ -130,6 +130,7 @@ game.newLoopFromConstructor('myGame', function () {
         if(player.currentHealth === 0){
             changeAnimationTo(player, playerDeathAnimation);
             setTimeout(function () {
+                zombieAttack.stop();
                 game.stop();
             }, 1150);
 
@@ -356,114 +357,131 @@ game.newLoopFromConstructor('myGame', function () {
         f.rotate(mouse.getPosition());
         fireBalls.push(f);
     };
+    let preStart = false;
 
     this.update = function () {
-        brush.drawImage({
-            x : 56, y : 56,
-            w : 66, h : 110,
-            file : 'resources/door.png'
-        });
-        mouse.setCursorImage("resources/cursorDefault.png");
-        player.control(world, skeletons);
-        player.draw();
 
-        skeletons.control(world, player);
+        if (pjs.resources.isLoaded() || preStart) {
 
-        OOP.forArr(world, function(brick) {
-            OOP.forArr(fireBalls, function(fireball, idFireball){
-                if(fireball.isStaticIntersect(brick)){
-                    fireBalls.splice(idFireball, 1);
-                }
+            pjs.system.setStyle( { background : 'url(resources/background.png)' } );
+
+            brush.drawImage({
+                x : 56, y : 56,
+                w : 66, h : 110,
+                file : 'resources/door.png'
             });
-            brick.draw();
-        });
 
-        OOP.forArr(fireBalls, function(fireball, idFireball){
-            OOP.forArr(skeletons, function (skeleton, idSkeleton) {
-                if(fireball.isStaticIntersect(skeleton)){
-                    skeleton.currentHealth--;
-                    fireBalls.splice(idFireball, 1);
-                    if(skeleton.currentHealth === 0) {
-                        zombieAttack.stop();
-                        changeAnimationTo(skeleton, skeletonDeathAnimation);
-                        skeleton.x += 11;
-                        skeleton.isAlive = false;
-                        skeleton.healthCounter = -10;
+            mouse.setCursorImage("resources/cursorDefault.png");
+            player.control(world, skeletons);
+            player.draw();
 
-                        setTimeout(function () {
-                            skeletons.splice(idSkeleton, 1);
-                        }, 2000)
+            skeletons.control(world, player);
+
+            OOP.forArr(world, function(brick) {
+                OOP.forArr(fireBalls, function(fireball, idFireball){
+                    if(fireball.isStaticIntersect(brick)){
+                        fireBalls.splice(idFireball, 1);
                     }
-                }
+                });
+                brick.draw();
             });
 
-            if(!fireball.isInCameraStatic())
-                return fireBalls.splice(idFireball, 1);
-            fireball.moveAngle(5);
-            fireball.draw();
-        });
+            OOP.forArr(fireBalls, function(fireball, idFireball){
+                OOP.forArr(skeletons, function (skeleton, idSkeleton) {
+                    if(fireball.isStaticIntersect(skeleton)){
+                        skeleton.currentHealth--;
+                        fireBalls.splice(idFireball, 1);
+                        if(skeleton.currentHealth === 0) {
+                            zombieAttack.stop();
+                            changeAnimationTo(skeleton, skeletonDeathAnimation);
+                            skeleton.x += 11;
+                            skeleton.isAlive = false;
+                            skeleton.healthCounter = -10;
 
-        OOP.forArr(skeletons, function (skeleton) {
-
-            /*if(skeleton.currentHealth > 0){
-                brush.drawTextS({
-                    text : skeleton.currentHealth,
-                    color : 'white',
-                    size : 15,
-                    x : skeleton.x + skeleton.w / 2,
-                    y : skeleton.y - 10,
-                    align : 'center'
+                            setTimeout(function () {
+                                skeletons.splice(idSkeleton, 1);
+                            }, 2000)
+                        }
+                    }
                 });
-            }*/
 
-            if(mouse.isInObject(skeleton)) {
-                mouse.setCursorImage("resources/cursorAttack.png");
+                if(!fireball.isInCameraStatic())
+                    return fireBalls.splice(idFireball, 1);
+                fireball.moveAngle(5);
+                fireball.draw();
+            });
+
+            OOP.forArr(skeletons, function (skeleton) {
+
+                /*if(skeleton.currentHealth > 0){
+                 brush.drawTextS({
+                 text : skeleton.currentHealth,
+                 color : 'white',
+                 size : 15,
+                 x : skeleton.x + skeleton.w / 2,
+                 y : skeleton.y - 10,
+                 align : 'center'
+                 });
+                 }*/
+
+                if(mouse.isInObject(skeleton)) {
+                    mouse.setCursorImage("resources/cursorAttack.png");
+                }
+
+                skeleton.draw();
+                // skeleton.drawStaticBox();
+            });
+
+            brush.onContext(function (ctx) {
+                let plPos = player.getPosition();
+                let gradient = ctx.createRadialGradient(plPos.x + player.w - 15 - camera.getPosition().x,
+                    plPos.y + 5,
+                    300,
+                    plPos.x + player.w - 5 - camera.getPosition().x,
+                    plPos.y + 5, 0);
+                gradient.addColorStop(0, pjs.colors.rgba(0, 0, 0, 0.95));
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, game.getWH().w, game.getWH().h);
+            });
+
+            if(player.currentHealth >= 0) {
+
+                brush.drawImageS({
+                    file : 'resources/heart.png',
+                    x : 10, y : 10,
+                    w : 100,
+                    scale : 0.8
+                });
+
+                brush.drawTextS({
+                    text : player.currentHealth,
+                    color : 'black',
+                    size : 45,
+                    x : 38, y : 22
+                });
             }
 
-            skeleton.draw();
-            // skeleton.drawStaticBox();
-        });
+            /*brush.drawTextS({
+                 text : pjs.system.getFPS(),
+                 color : 'white',
+                 size : 50,
+                 x : game.getWH().w - 65
+            });*/
 
-        brush.onContext(function (ctx) {
-            let plPos = player.getPosition();
-            let gradient = ctx.createRadialGradient(plPos.x + player.w - 15 - camera.getPosition().x,
-                                                    plPos.y + 5,
-                                                    300,
-                                                    plPos.x + player.w - 5 - camera.getPosition().x,
-                                                    plPos.y + 5, 0);
-            gradient.addColorStop(0, pjs.colors.rgba(0, 0, 0, 0.95));
-            gradient.addColorStop(1, 'transparent');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, width, height);
-        });
-
-        if(player.currentHealth >= 0) {
-
-            brush.drawImageS({
-                file : 'resources/heart.png',
-                x : 10, y : 10,
-                w : 100,
-                scale : 0.8
-            });
-
+            if(key.isPress('SPACE')){
+                game.setLoop('pause');
+                zombieAttack.stop();
+            }
+        } else {
             brush.drawTextS({
-                text : player.currentHealth,
+                text : 'Loading... ' + pjs.resources.getProgress() + '%',
                 color : 'black',
-                size : 45,
-                x : 38, y : 22
+                size : 70,
+                x : game.getWH2().w - 250 , y : game.getWH2().h - 50
             });
-        }
 
-        /*brush.drawTextS({
-            text : pjs.system.getFPS(),
-            color : 'white',
-            size : 50,
-            x : game.getWH().w - 65
-        });*/
-
-        if(key.isPress('SPACE')){
-            game.setLoop('pause');
-            zombieAttack.stop();
+            setTimeout(() => preStart = true, 5000);
         }
 
     };
@@ -502,13 +520,20 @@ game.newLoopFromConstructor('pause', function () {
 
 game.newLoopFromConstructor('menu', function () {
 
+    let base;
+    let createMenu;
+    let isCreated = false;
+
+
     this.update = function () {
+
+        if(!isCreated && pjs.resources.isLoaded){
+            createMenu();
+        }
 
     };
 
     this.entry = function () {
-        let base;
-        let createMenu;
 
         closeMenu = function() {
             pjs.system.removeDOM(base);
@@ -519,22 +544,24 @@ game.newLoopFromConstructor('menu', function () {
             base.className = 'base';
             base.innerHTML = `
 	
-	    <h1>Game Name</h1>
-
-        <div class="menu">
-    
-            <span onclick="closeMenu(); game.startLoop('myGame')">New game</span>
-            <span>Options</span>
-            <span>About</span>
+                <h1>Game Name</h1>
         
-        </div>
-    
-	`;
+                <div class="menu">
+            
+                    <span onclick="closeMenu(); game.startLoop('myGame')">New game</span>
+                    <span>Options</span>
+                    <span>About</span>
+                
+                </div>
+            
+            `;
+
+            isCreated = true;
         };
-        createMenu();
+
     }
 
 });
 
-if(pjs.resources.isLoaded)
-    game.startLoop('menu');
+
+game.startLoop('menu');
