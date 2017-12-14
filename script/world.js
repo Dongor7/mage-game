@@ -24,13 +24,12 @@ pjs.system.initFPSCheck();
 let lastKey;
 let closeMenu;
 
-let changeAnimationTo = function(abject, animation){
-    abject.setAnimation(animation);
-    abject.w = animation.w;
-    abject.h = animation.h;
+let changeAnimationTo = function(object, animation, delay = 10){
+    object.setAnimation(animation);
+    object.w = animation.w;
+    object.h = animation.h;
+    object.setDelay(delay);
 };
-
-console.log("Version 0.2.3");
 
 game.newLoopFromConstructor('myGame', function () {
 
@@ -45,30 +44,49 @@ game.newLoopFromConstructor('myGame', function () {
     let countJump = 0;
 
     let world = [];
+    let doorEnter = null;
+    let doorExit = null;
     let skeletons = [];
     let player = null;
+    let dragon = null;
+    let doorKey = null;
 
     pjs.levels.forStringArray({w : BW, h : BH, source : [
         '000000000000000000000000000000',
-        '0P                           0',
+        '01P                          0',
         '0                            0',
-        '0000000000     00000000      0',
-        '0     S     0         00      0',
+        '0000000000     00000000      00000000',
+        '0     S     0         00           K0',
         '0          000         00           0',
         '000000000000000000000   0000000000000',
-        '0                    0          S   0',
-        '0                     0             0',
+        '0                    0        S     0',
+        '0               S     0             0',
         '0                      000   00000000',
-        '0     S                     00',
-        '0                          000',
+        '0000 0 0000 00000  0        00',
+        '0                   0      000',
+        '02 B                 000000000',
+        '0                             ',
+        '00000000000000000000          ',
         '000000000000000000000000000000'
-    ]}, function (S, X, Y, W, H, source) {
+    ]}, function (S, X, Y, W, H) {
         if (S === '0') {
             world.push(game.newImageObject({
                 x : X, y : Y,
                 w : W, h : H,
                 file : 'resources/wall.png'
             }));
+        } else if (S === '1') {
+            doorEnter = game.newImageObject({
+                x : X, y : Y,
+                w : 66, h : 110,
+                file : 'resources/door.png'
+            });
+        } else if (S === '2') {
+            doorExit = game.newImageObject({
+                x : X, y : Y,
+                w : 66, h : 110,
+                file : 'resources/door.png'
+            });
         } else if (S === 'P') {
             player = game.newAnimationObject({
                 animation : null,
@@ -80,7 +98,9 @@ game.newLoopFromConstructor('myGame', function () {
                     health : 5,
                     currentHealth : 5,
                     underAttack : false,
-                    isShot : false
+                    isShot : false,
+                    score : 0,
+                    isGetKey : false
                 }
             });
         } else if (S === 'S') {
@@ -101,6 +121,30 @@ game.newLoopFromConstructor('myGame', function () {
             });
 
             skeletons.push(skeleton);
+        } else if (S === 'B') {
+            dragon = game.newAnimationObject({
+                animation: null,
+                x : X, y : Y,
+                w : 90, h : 115,
+                delay : 8,
+                scale : 1,
+                userData : {
+                    health : 10,
+                    currentHealth : 10,
+                    creationPoint : point(X, Y),
+                    agro : false,
+                    isAlive : true,
+                    isAttack : false
+                }
+            });
+        } else if (S === 'K') {
+            doorKey = game.newAnimationObject({
+                animation: pjs.tiles.newAnimation('resources/key.png', 32, 78, 6),
+                x :X, y : Y + 16,
+                w : 32, h : 78,
+                delay : 8,
+                scale : 1
+            });
         }
 
     });
@@ -125,9 +169,16 @@ game.newLoopFromConstructor('myGame', function () {
        skeleton.setAnimation(skeletonStayAnimation);
     });
 
-    player.control = function(arr, skeletons) {
+    let dragonStayAnimation = pjs.tiles.newAnimation('resources/dragonStay.png', 90, 115, 15);
+    let dragonStraightAttackAnimation = pjs.tiles.newAnimation('resources/dragonStraightAttack.png', 233, 133, 9);
+    let dragonBackAttackAnimation = pjs.tiles.newAnimation('resources/dragonBackAttack.png', 233, 133, 9);
+    let dragonStraightWalkAnimation = pjs.tiles.newAnimation('resources/dragonStraightWalk.png', 201, 128, 12);
+    let dragonDeathAnimation = pjs.tiles.newAnimation('resources/dragonDeath.png', 195, 141, 6);
+    changeAnimationTo(dragon, dragonStayAnimation);
 
-        if(player.currentHealth === 0){
+    player.control = function(arr, skeletons, dragon) {
+
+        if(player.currentHealth <= 0){
             changeAnimationTo(player, playerDeathAnimation);
             setTimeout(function () {
                 zombieAttack.stop();
@@ -260,6 +311,37 @@ game.newLoopFromConstructor('myGame', function () {
 
             }
         });
+
+        if(dragon &&
+            mouse.isInObject(dragon) &&
+            (mouse.isPress('LEFT') || mouse.isDown('LEFT')) &&
+            (player.getDistanceC((dragon.getPositionC()))) < 250 &&
+            player.currentHealth > 0) {
+
+            if(!player.isShot){
+                player.isShot = true;
+
+                player.w = 82;
+                player.h = 108;
+                player.setDelay(6);
+
+                if(player.x > dragon.x)
+                    changeAnimationTo(player, playerBackAttackAnimation);
+                else
+                    changeAnimationTo(player, playerStraightAttackAnimation);
+
+                setTimeout(function () {
+                    addFireBall();
+                    fireballAudio.play();
+                }, 500);
+
+                setTimeout(function () {
+                    player.isShot = false;
+                    player.setDelay(8);
+                }, 700)
+            }
+
+        }
     };
 
     skeletons.control = function (arr, player) {
@@ -327,7 +409,7 @@ game.newLoopFromConstructor('myGame', function () {
             }
 
             if(speedSkeleton.y < 5) {
-                speedSkeleton.y += 0.4;
+                speedSkeleton.y += 0.9;
             }
 
             pjs.vector.moveCollision(skeleton, arr, speedSkeleton, function(sk, w, isX, isY) {
@@ -343,7 +425,85 @@ game.newLoopFromConstructor('myGame', function () {
 
     };
 
-    let fireBalls = [];
+    dragon.control = function (arr, player) {
+
+        let speedDragon = point(0, 3);
+        let startX = this.x;
+
+        if (this.isAlive && this.getDistanceC(player.getPositionC()) < 250){
+
+            zombieAttack.play();
+
+            if (player.underAttack){
+
+            } else if (this.isIntersect(player)){
+
+                this.isAttack = true;
+
+                if(player.x > this.x){
+                    changeAnimationTo(this, dragonStraightAttackAnimation);
+                } else {
+                    changeAnimationTo(this, dragonBackAttackAnimation);
+                }
+
+                player.underAttack = true;
+                let self = this;
+
+                setTimeout(function () {
+                    self.isAttack = false;
+                    player.underAttack = false;
+                }, 1500);
+
+                setTimeout(function () {
+                    if(self.isIntersect(player)){
+                        player.currentHealth -= 2;
+                    }
+                },1000)
+
+            } else if (!this.isAttack){
+                this.moveToC(player.getPositionC(), 1);
+                this.agro = true;
+
+                if (startX < this.x) {
+                    changeAnimationTo(this, dragonStraightWalkAnimation, 5);
+                } else {
+                    changeAnimationTo(this, skeletonBackWalkAnimation, 5);
+                }
+            }
+
+        } else if (!this.isAttack &&
+                    this.isAlive &&
+                    this.agro &&
+                    this.getDistanceC(player.getPositionC()) > 250) {
+
+                this.moveTo(this.creationPoint, 4);
+
+                zombieAttack.stop();
+
+                if (this.creationPoint.x < this.x) {
+                    changeAnimationTo(this, skeletonBackWalkAnimation, 5);
+                } else {
+                    changeAnimationTo(this, dragonStraightWalkAnimation, 5);
+                }
+                if (Math.round(this.x) === this.creationPoint.x) {
+                    this.agro = false;
+                    changeAnimationTo(this, dragonStayAnimation);
+                    this.currentHealth = this.health;
+                }
+        }
+
+        if(speedDragon.y < 5) {
+            speedDragon.y += 0.9;
+        }
+
+        pjs.vector.moveCollision(this, arr, speedDragon);
+
+        if(mouse.isInObject(dragon)) {
+            mouse.setCursorImage("resources/cursorAttack.png");
+        }
+    };
+
+    let fireBalls   = [];
     let addFireBall = function() {
         let pX = player.x + player.w;
         let pY = player.y + 10;
@@ -357,7 +517,9 @@ game.newLoopFromConstructor('myGame', function () {
         f.rotate(mouse.getPosition());
         fireBalls.push(f);
     };
-    let preStart = false;
+    let preStart    = false;
+    let dragonKey   = null;
+    let hearts      = [];
 
     this.update = function () {
 
@@ -365,14 +527,14 @@ game.newLoopFromConstructor('myGame', function () {
 
             pjs.system.setStyle( { background : 'url(resources/background.png)' } );
 
-            brush.drawImage({
-                x : 56, y : 56,
-                w : 66, h : 110,
-                file : 'resources/door.png'
-            });
-
             mouse.setCursorImage("resources/cursorDefault.png");
-            player.control(world, skeletons);
+            doorEnter.draw();
+            doorExit.draw();
+            if (dragon){
+                dragon.control(world, player);
+                dragon.draw();
+            }
+            player.control(world, skeletons, dragon);
             player.draw();
 
             skeletons.control(world, player);
@@ -399,11 +561,47 @@ game.newLoopFromConstructor('myGame', function () {
                             skeleton.healthCounter = -10;
 
                             setTimeout(function () {
+                                hearts.push(
+                                    game.newAnimationObject({
+                                    animation: pjs.tiles.newAnimation('resources/addHeart.png', 86, 81, 6),
+                                    x : skeleton.getPosition().x + 10, y : skeleton.getPositionC().y - 10,
+                                    w : 86, h : 81,
+                                    delay : 6,
+                                    scale : 0.4
+                                }));
+
                                 skeletons.splice(idSkeleton, 1);
+                                player.score++;
                             }, 2000)
                         }
                     }
                 });
+
+                if(dragon && fireball.isStaticIntersect(dragon)){
+                    dragon.currentHealth--;
+                    fireBalls.splice(idFireball, 1);
+                    if(dragon.currentHealth <= 0) {
+                        zombieAttack.stop();
+                        changeAnimationTo(dragon, dragonDeathAnimation);
+                        dragon.x += 11;
+                        dragon.isAlive = false;
+                        dragon.healthCounter = -10;
+
+                        setTimeout(function () {
+                            dragonKey = game.newAnimationObject({
+                                animation: pjs.tiles.newAnimation('resources/key.png', 32, 78, 6),
+                                x : dragon.getPositionC().x, y : dragon.getPositionC().y - 20,
+                                w : 32, h : 78,
+                                delay : 8,
+                                scale : 1
+                            });
+
+                            dragon = null;
+                            player.score++;
+
+                        }, 1000)
+                    }
+                }
 
                 if(!fireball.isInCameraStatic())
                     return fireBalls.splice(idFireball, 1);
@@ -411,18 +609,47 @@ game.newLoopFromConstructor('myGame', function () {
                 fireball.draw();
             });
 
+            if (dragonKey) {
+                dragonKey.draw();
+
+                if (player.isStaticIntersect(dragonKey)){
+                    player.isGetKey = true;
+                    dragonKey = null;
+                }
+
+            }
+
+            if (doorKey) {
+                doorKey.draw();
+
+                if (player.isStaticIntersect(doorKey)){
+                    player.isGetKey = true;
+                    doorKey = null;
+                }
+
+            }
+
+            OOP.forArr(hearts, function (heart, id) {
+               if(player.isStaticIntersect(heart)){
+                   player.currentHealth++;
+                   hearts.splice(id, 1);
+               }
+
+               heart.draw();
+            });
+
             OOP.forArr(skeletons, function (skeleton) {
 
                 /*if(skeleton.currentHealth > 0){
-                 brush.drawTextS({
-                 text : skeleton.currentHealth,
-                 color : 'white',
-                 size : 15,
-                 x : skeleton.x + skeleton.w / 2,
-                 y : skeleton.y - 10,
-                 align : 'center'
-                 });
-                 }*/
+                    brush.drawTextS({
+                        text : skeleton.currentHealth,
+                        color : 'white',
+                        size : 15,
+                        x : skeleton.x + skeleton.w / 2 - camera.getPosition().x,
+                        y : skeleton.y - 10 - camera.getPosition().y,
+                        align : 'center'
+                    });
+                }*/
 
                 if(mouse.isInObject(skeleton)) {
                     mouse.setCursorImage("resources/cursorAttack.png");
@@ -435,10 +662,10 @@ game.newLoopFromConstructor('myGame', function () {
             brush.onContext(function (ctx) {
                 let plPos = player.getPosition();
                 let gradient = ctx.createRadialGradient(plPos.x + player.w - 15 - camera.getPosition().x,
-                    plPos.y + 5,
+                    plPos.y + 5 - camera.getPosition().y,
                     300,
                     plPos.x + player.w - 5 - camera.getPosition().x,
-                    plPos.y + 5, 0);
+                    plPos.y + 5 - camera.getPosition().y, 0);
                 gradient.addColorStop(0, pjs.colors.rgba(0, 0, 0, 0.95));
                 gradient.addColorStop(1, 'transparent');
                 ctx.fillStyle = gradient;
@@ -462,18 +689,55 @@ game.newLoopFromConstructor('myGame', function () {
                 });
             }
 
-            /*brush.drawTextS({
+            /* brush.drawTextS({
                  text : pjs.system.getFPS(),
                  color : 'white',
                  size : 50,
                  x : game.getWH().w - 65
             });*/
 
+            if (player.isStaticIntersect(doorExit) && player.isGetKey){
+
+                brush.drawTextS({
+                    text : 'YOU WIN',
+                    color : 'red',
+                    size : 120,
+                    x : game.getWH2().w - 250 , y : game.getWH2().h - 50
+                });
+
+                setTimeout(function () {
+                    game.stop();
+                    window.location.href = "https://www.google.by/";
+                }, 1500);
+            }
+            else if (player.isStaticIntersect(doorExit)) {
+
+                brush.drawTextS({
+                    text : 'I need a key...',
+                    color : 'white',
+                    size : 15,
+                    x : player.x + player.w / 2 - camera.getPosition().x,
+                    y : player.y - 10 - camera.getPosition().y
+                });
+
+            }
+            else if (player.isGetKey) {
+
+                brush.drawImageS({
+                    file : 'resources/keyIcon.png',
+                    x : 40, y : 100,
+                    w : 32,
+                    scale : 0.5
+                });
+
+            }
+
             if(key.isPress('SPACE')){
                 game.setLoop('pause');
                 zombieAttack.stop();
             }
-        } else {
+        }
+        else {
             brush.drawTextS({
                 text : 'Loading... ' + pjs.resources.getProgress() + '%',
                 color : 'black',
@@ -491,77 +755,9 @@ game.newLoopFromConstructor('myGame', function () {
         fireballAudio = pjs.wAudio.newAudio('resources/audio/fireball.mp3');
         zombieAttack = pjs.wAudio.newAudio('resources/audio/zombieAttack.mp3', 0.8);
 
-        let fonAudio = pjs.wAudio.newAudio('resources/audio/fon.mp3', 0.6);
+        let fonAudio = pjs.wAudio.newAudio('resources/audio/fon.mp3', 0.8);
         game.setLoopSound('myGame', [fonAudio]);
     }
 });
-
-game.newLoopFromConstructor('pause', function () {
-
-    this.update = function () {
-
-        game.fill('black');
-
-        brush.drawText({
-            text : 'PAUSE',
-            size : 70,
-            color : 'white'
-        });
-
-        if(key.isPress('SPACE')){
-            game.setLoop('myGame');
-        }
-    };
-
-    this.entry = function () {
-    }
-
-});
-
-game.newLoopFromConstructor('menu', function () {
-
-    let base;
-    let createMenu;
-    let isCreated = false;
-
-
-    this.update = function () {
-
-        if(!isCreated && pjs.resources.isLoaded){
-            createMenu();
-        }
-
-    };
-
-    this.entry = function () {
-
-        closeMenu = function() {
-            pjs.system.removeDOM(base);
-        };
-
-        createMenu = function() {
-            base = pjs.system.newDOM('div', true);
-            base.className = 'base';
-            base.innerHTML = `
-	
-                <h1>Game Name</h1>
-        
-                <div class="menu">
-            
-                    <span onclick="closeMenu(); game.startLoop('myGame')">New game</span>
-                    <span>Options</span>
-                    <span>About</span>
-                
-                </div>
-            
-            `;
-
-            isCreated = true;
-        };
-
-    }
-
-});
-
 
 game.startLoop('menu');
