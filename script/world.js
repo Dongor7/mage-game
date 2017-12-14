@@ -33,23 +33,24 @@ let changeAnimationTo = function(object, animation, delay = 10){
 
 game.newLoopFromConstructor('myGame', function () {
 
-    let isWalkPlay = false;
-    let walkAudio = null;
-    let fireballAudio = null;
-    let zombieAttack = null;
+    let isWalkPlay      = false;
+    let walkAudio       = null;
+    let fireballAudio   = null;
+    let zombieAttack    = null;
 
-    let speedPlayer = point(0, 3);
-    let speedCamera = point(3, 0);
+    let speedPlayer     = point(0, 3);
+    let speedCamera     = point(3, 0);
     let previousPlayerX = null;
-    let countJump = 0;
+    let countJump       = 0;
 
-    let world = [];
-    let doorEnter = null;
-    let doorExit = null;
-    let skeletons = [];
-    let player = null;
-    let dragon = null;
-    let doorKey = null;
+    let world           = [];
+    let doorEnter       = null;
+    let doorExit        = null;
+    let skeletons       = [];
+    let player          = null;
+    let dragon          = null;
+    let doorKey         = null;
+    let isWin           = false;
 
     pjs.levels.forStringArray({w : BW, h : BH, source : [
         '000000000000000000000000000000',
@@ -64,9 +65,9 @@ game.newLoopFromConstructor('myGame', function () {
         '0                      000   00000000',
         '0000 0 0000 00000  0        00',
         '0                   0      000',
-        '02 B                 000000000',
+        '02B                  000000000',
         '0                             ',
-        '00000000000000000000          ',
+        '0000000000000000000           ',
         '000000000000000000000000000000'
     ]}, function (S, X, Y, W, H) {
         if (S === '0') {
@@ -75,19 +76,25 @@ game.newLoopFromConstructor('myGame', function () {
                 w : W, h : H,
                 file : 'resources/wall.png'
             }));
-        } else if (S === '1') {
+        }
+        else if (S === '1') {
             doorEnter = game.newImageObject({
                 x : X, y : Y,
                 w : 66, h : 110,
                 file : 'resources/door.png'
             });
-        } else if (S === '2') {
+        }
+        else if (S === '2') {
             doorExit = game.newImageObject({
                 x : X, y : Y,
                 w : 66, h : 110,
-                file : 'resources/door.png'
+                file : 'resources/door.png',
+                userData : {
+                    isOpen : false
+                }
             });
-        } else if (S === 'P') {
+        }
+        else if (S === 'P') {
             player = game.newAnimationObject({
                 animation : null,
                 x : X, y : Y,
@@ -103,7 +110,8 @@ game.newLoopFromConstructor('myGame', function () {
                     isGetKey : false
                 }
             });
-        } else if (S === 'S') {
+        }
+        else if (S === 'S') {
             let skeleton = game.newAnimationObject({
                 animation: null,
                 x : X, y : Y,
@@ -116,12 +124,14 @@ game.newLoopFromConstructor('myGame', function () {
                     creationPoint : point(X, Y),
                     agro : false,
                     isAlive : true,
-                    isAttack : false
+                    isAttack : false,
+                    attackSound : pjs.wAudio.newAudio('resources/audio/zombieAttack.mp3', 0.8)
                 }
             });
 
             skeletons.push(skeleton);
-        } else if (S === 'B') {
+        }
+        else if (S === 'B') {
             dragon = game.newAnimationObject({
                 animation: null,
                 x : X, y : Y,
@@ -134,10 +144,12 @@ game.newLoopFromConstructor('myGame', function () {
                     creationPoint : point(X, Y),
                     agro : false,
                     isAlive : true,
-                    isAttack : false
+                    isAttack : false,
+                    attackSound : pjs.wAudio.newAudio('resources/audio/rev-drakona.mp3')
                 }
             });
-        } else if (S === 'K') {
+        }
+        else if (S === 'K') {
             doorKey = game.newAnimationObject({
                 animation: pjs.tiles.newAnimation('resources/key.png', 32, 78, 6),
                 x :X, y : Y + 16,
@@ -179,9 +191,8 @@ game.newLoopFromConstructor('myGame', function () {
     player.control = function(arr, skeletons, dragon) {
 
         if(player.currentHealth <= 0){
-            changeAnimationTo(player, playerDeathAnimation);
+            changeAnimationTo(player, playerDeathAnimation, 8);
             setTimeout(function () {
-                zombieAttack.stop();
                 game.stop();
             }, 1150);
 
@@ -348,12 +359,14 @@ game.newLoopFromConstructor('myGame', function () {
 
         OOP.forArr(this, function (skeleton) {
 
+            let self = skeleton;
+
             let speedSkeleton = point(0, 3);
             let startX = skeleton.x;
 
             if (skeleton.isAlive && skeleton.getDistanceC(player.getPositionC()) < 250){
 
-                zombieAttack.play();
+                skeleton.attackSound.play();
 
                 if (player.underAttack){
 
@@ -391,10 +404,11 @@ game.newLoopFromConstructor('myGame', function () {
                     }
                 }
 
-            } else if (!skeleton.isAttack && skeleton.isAlive && skeleton.agro && skeleton.getDistanceC(player.getPositionC()) > 250) {
+            }
+            else if (!skeleton.isAttack && skeleton.isAlive && skeleton.agro && skeleton.getDistanceC(player.getPositionC()) > 250) {
                 skeleton.moveTo(skeleton.creationPoint, 4);
 
-                zombieAttack.stop();
+                skeleton.attackSound.stop();
 
                 if (skeleton.creationPoint.x < skeleton.x) {
                     changeAnimationTo(skeleton, skeletonBackWalkAnimation);
@@ -421,6 +435,28 @@ game.newLoopFromConstructor('myGame', function () {
                 }
 
             });
+
+            if(skeleton.currentHealth > 0){
+                brush.drawImageS({
+                    file : 'resources/skeletonHeart.png',
+                    x : skeleton.x - 30 - camera.getPosition().x,
+                    y : skeleton.y - 5 - camera.getPosition().y,
+                    w : 100,
+                    scale : 0.3
+                });
+                brush.drawTextS({
+                    text : skeleton.currentHealth,
+                    color : 'black',
+                    size : 18,
+                    x : skeleton.x - 20 - camera.getPosition().x,
+                    y : skeleton.y - 2 - camera.getPosition().y
+                });
+
+            }
+
+            if(mouse.isInObject(skeleton)) {
+                mouse.setCursorImage("resources/cursorAttack.png");
+            }
         })
 
     };
@@ -430,9 +466,9 @@ game.newLoopFromConstructor('myGame', function () {
         let speedDragon = point(0, 3);
         let startX = this.x;
 
-        if (this.isAlive && this.getDistanceC(player.getPositionC()) < 250){
+        if (this.isAlive && this.getDistanceC(player.getPositionC()) <= 250){
 
-            zombieAttack.play();
+            dragon.attackSound.play();
 
             if (player.underAttack){
 
@@ -478,7 +514,7 @@ game.newLoopFromConstructor('myGame', function () {
 
                 this.moveTo(this.creationPoint, 4);
 
-                zombieAttack.stop();
+                dragon.attackSound.stop();
 
                 if (this.creationPoint.x < this.x) {
                     changeAnimationTo(this, skeletonBackWalkAnimation, 5);
@@ -501,6 +537,25 @@ game.newLoopFromConstructor('myGame', function () {
         if(mouse.isInObject(dragon)) {
             mouse.setCursorImage("resources/cursorAttack.png");
         }
+
+        if(this.currentHealth > 0){
+            brush.drawImageS({
+                file : 'resources/skeletonHeart.png',
+                x : this.x - 30 - camera.getPosition().x,
+                y : this.y - 5 - camera.getPosition().y,
+                w : 100,
+                scale : 0.3
+            });
+            brush.drawTextS({
+                text : this.currentHealth,
+                color : 'black',
+                size : 18,
+                x : this.x - 15 - camera.getPosition().x,
+                y : this.y - 2 - camera.getPosition().y,
+                align : 'center'
+            });
+
+        }
     };
 
     let fireBalls   = [];
@@ -520,6 +575,7 @@ game.newLoopFromConstructor('myGame', function () {
     let preStart    = false;
     let dragonKey   = null;
     let hearts      = [];
+    let shakeRadius = 0;
 
     this.update = function () {
 
@@ -538,6 +594,7 @@ game.newLoopFromConstructor('myGame', function () {
             player.draw();
 
             skeletons.control(world, player);
+            OOP.drawArr(skeletons);
 
             OOP.forArr(world, function(brick) {
                 OOP.forArr(fireBalls, function(fireball, idFireball){
@@ -554,7 +611,7 @@ game.newLoopFromConstructor('myGame', function () {
                         skeleton.currentHealth--;
                         fireBalls.splice(idFireball, 1);
                         if(skeleton.currentHealth === 0) {
-                            zombieAttack.stop();
+                            skeleton.attackSound.stop();
                             changeAnimationTo(skeleton, skeletonDeathAnimation);
                             skeleton.x += 11;
                             skeleton.isAlive = false;
@@ -581,7 +638,7 @@ game.newLoopFromConstructor('myGame', function () {
                     dragon.currentHealth--;
                     fireBalls.splice(idFireball, 1);
                     if(dragon.currentHealth <= 0) {
-                        zombieAttack.stop();
+                        dragon.attackSound.stop();
                         changeAnimationTo(dragon, dragonDeathAnimation);
                         dragon.x += 11;
                         dragon.isAlive = false;
@@ -638,32 +695,11 @@ game.newLoopFromConstructor('myGame', function () {
                heart.draw();
             });
 
-            OOP.forArr(skeletons, function (skeleton) {
-
-                /*if(skeleton.currentHealth > 0){
-                    brush.drawTextS({
-                        text : skeleton.currentHealth,
-                        color : 'white',
-                        size : 15,
-                        x : skeleton.x + skeleton.w / 2 - camera.getPosition().x,
-                        y : skeleton.y - 10 - camera.getPosition().y,
-                        align : 'center'
-                    });
-                }*/
-
-                if(mouse.isInObject(skeleton)) {
-                    mouse.setCursorImage("resources/cursorAttack.png");
-                }
-
-                skeleton.draw();
-                // skeleton.drawStaticBox();
-            });
-
             brush.onContext(function (ctx) {
                 let plPos = player.getPosition();
                 let gradient = ctx.createRadialGradient(plPos.x + player.w - 15 - camera.getPosition().x,
                     plPos.y + 5 - camera.getPosition().y,
-                    300,
+                    400,
                     plPos.x + player.w - 5 - camera.getPosition().x,
                     plPos.y + 5 - camera.getPosition().y, 0);
                 gradient.addColorStop(0, pjs.colors.rgba(0, 0, 0, 0.95));
@@ -689,28 +725,12 @@ game.newLoopFromConstructor('myGame', function () {
                 });
             }
 
-            /* brush.drawTextS({
-                 text : pjs.system.getFPS(),
-                 color : 'white',
-                 size : 50,
-                 x : game.getWH().w - 65
-            });*/
-
             if (player.isStaticIntersect(doorExit) && player.isGetKey){
-
-                brush.drawTextS({
-                    text : 'YOU WIN',
-                    color : 'red',
-                    size : 120,
-                    x : game.getWH2().w - 250 , y : game.getWH2().h - 50
-                });
-
-                setTimeout(function () {
-                    game.stop();
-                    window.location.href = "https://www.google.by/";
-                }, 1500);
+                player.isGetKey = false;
+                doorExit.isOpen = true;
+                isWin = true;
             }
-            else if (player.isStaticIntersect(doorExit)) {
+            else if (player.isStaticIntersect(doorExit) && !doorExit.isOpen) {
 
                 brush.drawTextS({
                     text : 'I need a key...',
@@ -732,10 +752,24 @@ game.newLoopFromConstructor('myGame', function () {
 
             }
 
+            if (isWin) {
+                brush.drawTextS({
+                    text : 'YOU WIN',
+                    color : 'red',
+                    size : 120,
+                    x : game.getWH2().w - 250 , y : game.getWH2().h - 50
+                });
+
+                setTimeout(function () {
+                    game.stop();
+                    window.location.href = "https://www.google.by/";
+                }, 1500);
+            }
+
             if(key.isPress('SPACE')){
                 game.setLoop('pause');
-                zombieAttack.stop();
             }
+
         }
         else {
             brush.drawTextS({
@@ -753,9 +787,8 @@ game.newLoopFromConstructor('myGame', function () {
     this.entry = function () {
         walkAudio = pjs.wAudio.newAudio('resources/audio/walk.mp3');
         fireballAudio = pjs.wAudio.newAudio('resources/audio/fireball.mp3');
-        zombieAttack = pjs.wAudio.newAudio('resources/audio/zombieAttack.mp3', 0.8);
 
-        let fonAudio = pjs.wAudio.newAudio('resources/audio/fon.mp3', 0.8);
+        let fonAudio = pjs.wAudio.newAudio('resources/audio/fon.mp3');
         game.setLoopSound('myGame', [fonAudio]);
     }
 });
