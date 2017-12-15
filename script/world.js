@@ -51,24 +51,28 @@ game.newLoopFromConstructor('myGame', function () {
     let dragon          = null;
     let doorKey         = null;
     let isWin           = false;
+    let motionBlock     = null;
+    let portA           = null;
+    let portB           = null;
 
     pjs.levels.forStringArray({w : BW, h : BH, source : [
-        '000000000000000000000000000000',
-        '01P                          0',
-        '0                            0',
-        '0000000000     00000000      00000000',
-        '0     S     0         00           K0',
-        '0          000         00           0',
-        '000000000000000000000   0000000000000',
-        '0                    0        S     0',
-        '0               S     0             0',
-        '0                      000   00000000',
-        '0000 0 0000 00000  0        00',
-        '0                   0      000',
-        '02B                  000000000',
-        '0                             ',
-        '0000000000000000000           ',
-        '000000000000000000000000000000'
+        '0000000000000000000000000000000000000000000',
+        '0P                               S        0',
+        '01                            K    C      0',
+        '0                                         0',
+        '0000000000     00000000      00000000     0',
+        '0      S    0         00            0     0',
+        '0          000         00           0 M  00',
+        '000000000000000000000   0000000000000   000',
+        '0                    0        S     0     0',
+        '0  S     S     S      0             00    0',
+        '0                      000   0000000000   0',
+        '0A 00000000000000  0        00           00',
+        '0                   0      00           000',
+        '02B                  0000000    00000000000',
+        '0                              000000000000',
+        '0000000000000000000           0000000000000',
+        '0000000000000000000000000000000000000000000'
     ]}, function (S, X, Y, W, H) {
         if (S === '0') {
             world.push(game.newImageObject({
@@ -76,6 +80,27 @@ game.newLoopFromConstructor('myGame', function () {
                 w : W, h : H,
                 file : 'resources/wall.png'
             }));
+        }
+        else if (S === 'A') {
+            portA = game.newRectObject({
+                x : X, y : Y,
+                w : W, h : H,
+                visible : false
+            });
+        }
+        else if (S === 'C') {
+            portB = game.newRectObject({
+                x : X, y : Y,
+                w : W, h : H,
+                visible : false
+            });
+        }
+        else if (S === 'M') {
+            motionBlock = game.newImageObject({
+                x : X, y : Y,
+                w : W, h : H,
+                file : 'resources/wall.png'
+            });
         }
         else if (S === '1') {
             doorEnter = game.newImageObject({
@@ -161,7 +186,7 @@ game.newLoopFromConstructor('myGame', function () {
 
     });
 
-    let levelLength = '000000000000000000000   0000000000000'.length * BW;
+    let levelLength = '0000000000000000000000000000000000000000000000'.length * BW;
 
     let playerStayAnimation = pjs.tiles.newAnimation('resources/mageStraightStay.png', 50, 101, 8);
     let playerBackStayAnimation = pjs.tiles.newAnimation('resources/mageBackStay.png', 41, 101, 8);
@@ -188,6 +213,19 @@ game.newLoopFromConstructor('myGame', function () {
     let dragonDeathAnimation = pjs.tiles.newAnimation('resources/dragonDeath.png', 195, 141, 6);
     changeAnimationTo(dragon, dragonStayAnimation);
 
+    motionBlock.control = function (world) {
+
+        if (mouse.isInObject(this)){
+            this.drawStaticBox();
+
+            if(mouse.isDown('LEFT')){
+                this.setPositionC(mouse.getPosition());
+                pjs.vector.moveCollision(this, world, mouse.getSpeed());
+            }
+        }
+
+};
+
     player.control = function(arr, skeletons, dragon) {
 
         if(player.currentHealth <= 0){
@@ -196,7 +234,8 @@ game.newLoopFromConstructor('myGame', function () {
                 game.stop();
             }, 1150);
 
-        }else if(key.isDown('A')){
+        }
+        else if(key.isDown('A')){
 
             if (!isWalkPlay){
                 walkAudio.play();
@@ -218,8 +257,10 @@ game.newLoopFromConstructor('myGame', function () {
 
             let currentX = player.getPositionC().x;
 
-            if(width / 2 > camera.getPosition().x &&
-                previousPlayerX > currentX &&
+            console.log("game.getWH2().w = " + game.getWH2().w);
+            console.log(" > camera.getPosition().x = " + camera.getPosition().x);
+
+            if(previousPlayerX > currentX &&
                 camera.getPosition().x > 0){
 
                     previousPlayerX = currentX;
@@ -249,16 +290,17 @@ game.newLoopFromConstructor('myGame', function () {
 
             let currentX = player.getPositionC().x;
 
-            if(width / 2 < currentX &&
+            if(game.getWH2().w < currentX &&
                 previousPlayerX < currentX &&
-                camera.getPosition().x + width < levelLength){
+                camera.getPosition().x + game.getWH().w < levelLength){
 
                     previousPlayerX = currentX;
                     camera.move(speedCamera);
             }
 
             lastKey = 'D'
-        } else if(!player.isShot){
+        }
+        else if(!player.isShot){
 
             walkAudio.stop();
             isWalkPlay = false;
@@ -280,6 +322,10 @@ game.newLoopFromConstructor('myGame', function () {
         if(key.isPress('W') && !countJump){
             countJump++;
             speedPlayer.y = -8;
+
+            if (camera.getPosition().y > 8) {
+                camera.move(speedPlayer);
+            }
         }
 
         if(speedPlayer.y < 5) {
@@ -353,13 +399,17 @@ game.newLoopFromConstructor('myGame', function () {
             }
 
         }
+
+        /*if(player.isStaticIntersect(portA)){
+            player.setPosition(portB.getPosition());
+            camera.setPosition(point(levelLength - game.getWH().w, 0))
+        }*/
+
     };
 
     skeletons.control = function (arr, player) {
 
         OOP.forArr(this, function (skeleton) {
-
-            let self = skeleton;
 
             let speedSkeleton = point(0, 3);
             let startX = skeleton.x;
@@ -426,7 +476,7 @@ game.newLoopFromConstructor('myGame', function () {
                 speedSkeleton.y += 0.9;
             }
 
-            pjs.vector.moveCollision(skeleton, arr, speedSkeleton, function(sk, w, isX, isY) {
+            pjs.vector.moveCollision(skeleton, arr, speedSkeleton, function(sk, w) {
 
                 if(w.x > sk.x){
                     sk.x -= speedSkeleton.x;
@@ -575,13 +625,17 @@ game.newLoopFromConstructor('myGame', function () {
     let preStart    = false;
     let dragonKey   = null;
     let hearts      = [];
-    let shakeRadius = 0;
+
+    world.push(motionBlock);
+
 
     this.update = function () {
 
         if (pjs.resources.isLoaded() || preStart) {
 
+
             pjs.system.setStyle( { background : 'url(resources/background.png)' } );
+
 
             mouse.setCursorImage("resources/cursorDefault.png");
             doorEnter.draw();
@@ -590,8 +644,13 @@ game.newLoopFromConstructor('myGame', function () {
                 dragon.control(world, player);
                 dragon.draw();
             }
-            player.control(world, skeletons, dragon);
+            player.control(world, skeletons, dragon, motionBlock);
             player.draw();
+
+            portA.draw();
+            portB.draw();
+
+            motionBlock.control(world);
 
             skeletons.control(world, player);
             OOP.drawArr(skeletons);
@@ -770,6 +829,7 @@ game.newLoopFromConstructor('myGame', function () {
                 game.setLoop('pause');
             }
 
+
         }
         else {
             brush.drawTextS({
@@ -790,7 +850,8 @@ game.newLoopFromConstructor('myGame', function () {
 
         let fonAudio = pjs.wAudio.newAudio('resources/audio/fon.mp3');
         game.setLoopSound('myGame', [fonAudio]);
-    }
+    };
+
 });
 
 game.startLoop('menu');
