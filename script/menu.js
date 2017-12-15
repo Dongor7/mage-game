@@ -15,18 +15,11 @@ game.newLoopFromConstructor('menu', function () {
 
         createMenu = function() {
             base = pjs.system.newDOM('div', true);
-            base.className = 'base';
+            base.className = 'allthethings';
             base.innerHTML = `
 	
-                <h1>Game Name</h1>
-        
-                <div class="menu">
-            
-                    <span onclick="closeMenu(); game.startLoop('myGame')">New game</span>
-                    <span>Options</span>
-                    <span>About</span>
-                
-                </div>
+                <div id="start" onclick="closeMenu(); game.startLoop('myGame')"></div>
+                <div id="circle"></div>
             
             `;
         };
