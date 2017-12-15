@@ -232,6 +232,7 @@ game.newLoopFromConstructor('myGame', function () {
             changeAnimationTo(player, playerDeathAnimation, 8);
             setTimeout(function () {
                 game.stop();
+                window.location.href = "https://dongor7.github.io/mage-game/";
             }, 1150);
 
         }
@@ -821,7 +822,7 @@ game.newLoopFromConstructor('myGame', function () {
 
                 setTimeout(function () {
                     game.stop();
-                    window.location.href = "https://www.google.by/";
+                    window.location.href = "https://dongor7.github.io/mage-game/";
                 }, 1500);
             }
 
