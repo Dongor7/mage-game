@@ -833,6 +833,9 @@ game.newLoopFromConstructor('myGame', function () {
 
         }
         else {
+
+            pjs.system.setStyle( { background : 'url(resources/b.jpg)' } );
+
             brush.drawTextS({
                 text : 'Loading... ' + pjs.resources.getProgress() + '%',
                 color : 'black',
@@ -855,4 +858,5 @@ game.newLoopFromConstructor('myGame', function () {
 
 });
 
-game.startLoop('menu');
+game.setLoop('myGame');
+game.startLoop('myGame');
