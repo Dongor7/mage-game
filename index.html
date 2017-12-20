@@ -2,23 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="full-screen" content="yes">
-    <!--<meta name="screen-orientation" content="portrait">-->
-    <meta name="x5-fullscreen" content="true">
-    <meta name="360-fullscreen" content="true">
-    <meta http-equiv="cache-control" content="no-cache">
-    <meta name="HandheldFriendly" content="true">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Game Coder: Release Game</title>
-    <!--<link href="style/menu_style.css" rel="stylesheet"/>-->
+    <title>The Game</title>
+    <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-    <script src="script/min/point.min.js"></script>
-    <script src="script/world.js"></script>
-    <!--<script src="script/menu.js"></script>-->
-    <script src="script/pause.js"></script>
+
+    <header class="header grid">
+        <h1 class="grid container">Satogar</h1>
+    </header>
+
+
+    <section class="description grid">
+        <h3>Description</h3>
+        <p class="container content">
+            In this game you have to play for a wizard, who wanders in the dungeon in search of an exit. He will face various creatures and riddles before he can get out.
+        </p>
+    </section>
+
+    <section class="control grid">
+        <h3>Controls</h3>
+        <div class="grid container items">
+            <div class="keys grid">
+                <div class="item grid">
+                    <h5>Movement</h5>
+                    <img src="img/ad.png">
+                </div>
+                <div class="item grid">
+                    <h5>Jump</h5>
+                    <img src="img/w.png">
+                </div>
+            </div>
+
+            <div class="item grid">
+                <h5>Attack</h5>
+                <img class="mouse" src="img/mouse-left-button.svg">
+            </div>
+        </div>
+    </section>
+
+    <section class="screenshots grid">
+        <h3>Screenshots</h3>
+        <div class="pic container grid">
+            <img src="img/1.png">
+            <img src="img/4.png">
+            <img src="img/3.png">
+            <img src="img/5.png">
+            <img src="img/6.png">
+            <img src="img/2.png">
+        </div>
+    </section>
+
+    <section class="play grid">
+        <div class="allthethings">
+            <div id="start" onclick=go()></div>
+        </div>
+    </section>
+
+<script>
+    function go() {
+        window.location.href = 'https://dongor7.github.io/mage-game/';
+    }
+</script>
 
 </body>
 </html>
