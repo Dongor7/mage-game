@@ -228,15 +228,22 @@ game.newLoopFromConstructor('myGame', function () {
 
     player.control = function(arr, skeletons, dragon) {
 
-        if(player.currentHealth <= 0){
+        /*if(player.currentHealth <= 0){
             changeAnimationTo(player, playerDeathAnimation, 8);
+            brush.drawTextS({
+                text : 'YOU LOSE',
+                color : 'red',
+                size : 120,
+                x : game.getWH2().w - 250 , y : game.getWH2().h - 50
+            });
+
             setTimeout(function () {
                 game.stop();
                 window.location.href = "https://dongor7.github.io/mage-game/";
             }, 1150);
 
         }
-        else if(key.isDown('A')){
+        else*/ if(key.isDown('A')){
 
             if (!isWalkPlay){
                 walkAudio.play();
@@ -840,10 +847,26 @@ game.newLoopFromConstructor('myGame', function () {
                 text : 'Loading... ' + pjs.resources.getProgress() + '%',
                 color : 'black',
                 size : 70,
-                x : game.getWH2().w - 250 , y : game.getWH2().h - 50
+                x : game.getWH2().w - 280 , y : game.getWH2().h - 80
             });
 
             setTimeout(() => preStart = true, 5000);
+        }
+
+        if(player.currentHealth <= 0){
+            changeAnimationTo(player, playerDeathAnimation, 8);
+            brush.drawTextS({
+                text : 'YOU LOSE',
+                color : 'red',
+                size : 120,
+                x : game.getWH2().w - 350 , y : game.getWH2().h - 80
+            });
+
+            setTimeout(function () {
+                game.stop();
+                window.location.href = "https://dongor7.github.io/mage-game/";
+            }, 1150);
+
         }
 
     };
