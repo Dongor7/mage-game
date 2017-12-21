@@ -108,6 +108,7 @@ p {
     height: 181px;
     border: 1px solid black;
     box-shadow: 0 0 15px #02a000;
+    width: 100%;
 }
 
 #start {
