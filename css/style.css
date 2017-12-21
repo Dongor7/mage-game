@@ -14,15 +14,12 @@
     padding: 0;
 }
 
-/*#006680*/
-
 html {
     height: 100%;
     box-sizing: border-box;
     font-size: 30px;
     font-family: "WIZARD", sans-serif;
     text-shadow: 0 0 4px #02a000;
-
 }
 
 body {
